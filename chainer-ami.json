@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "region": "us-west-2",
+    "deepleraning_base_ami": "ami-7625b90e",
+    "instance_type": "p2.xlarge",
+
+    "version": "{{isotime | clean_ami_name}}",
+    "openmpi_prefix": "/usr/local/mpi",
+    "openmpi_version": "2.1.3",
+    "cupy_version": "4.1.0",
+    "chainer_version": "4.1.0",
+    "chainermn_version": "1.3.0",
+    "chainerrl_version": "0.3.0",
+    "chainercv_version": "0.9.0"
+  },
+
+  "builders": [
+    {
+      "type": "amazon-ebs",
+      "ami_name": "chainer-ami-{{user `version`}}",
+      "region": "{{user `region`}}",
+      "source_ami": "{{user `deepleraning_base_ami`}}",
+      "instance_type": "{{user `instance_type`}}",
+      "ami_regions": "{{user `destination_regions`}}",
+      "ami_groups": "all",
+      "ami_description": "Chainer pre-installed AMI, which contains Chainer version {{user `chainer_version`}}, ChainerMN version {{user `chainermn_version`}}, ChainerRL version {{user `chainerrl_version`}}, ChainerCV version {{user `chainercv_version`}}, CUDA aware OpenMPI version {{user `openmpi_version`}}.  This AMI is based on Deep Learning Base AMI version 4.0.",
+      "ssh_username": "ubuntu",
+      "ssh_timeout": "10m"
+    }
+  ],
+
+  "provisioners": [
+    {
+      "type": "shell",
+      "execute_command": "sudo -H bash -c '{{ .Vars }} {{ .Path }}'",
+      "inline": [
+        "killall dpkg || rm -rf /var/lib/dpkg/lock || true"
+      ]
+    }, {
+      "type": "shell",
+      "execute_command": "sudo -H bash -c '{{ .Vars }} {{ .Path }}'",
+      "scripts": [
+        "scripts/uninstall-preinstalled-openmpi.sh",
+        "scripts/install-openmpi.sh",
+        "scripts/install-chainer-and-cupy.sh",
+        "scripts/install-chainermn.sh",
+        "scripts/install-chainerrl.sh",
+        "scripts/install-chainercv.sh",
+        "scripts/update-sshd-config.sh",
+        "scripts/locale-gen.sh"
+      ],
+      "environment_vars": [
+        "OPENMPI_PREFIX={{user `openmpi_prefix`}}",
+        "OPENMPI_VERSION={{user `openmpi_version`}}",
+        "CUPY_VERSION={{user `cupy_version`}}",
+        "CHAINER_VERSION={{user `chainer_version`}}",
+        "CHAINER_MN_VERSION={{user `chainermn_version`}}",
+        "CHAINER_RL_VERSION={{user `chainerrl_version`}}",
+        "CHAINER_CV_VERSION={{user `chainercv_version`}}"
+      ]
+    }
+  ]
+}
